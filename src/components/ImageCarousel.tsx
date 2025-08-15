@@ -39,11 +39,6 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
   return (
     <div className="relative w-full h-96 rounded-2xl shadow-2xl overflow-hidden">
-      {/* Debug Info */}
-      <div className="absolute top-0 left-0 bg-black/80 text-white p-2 text-xs z-20">
-        Images: {images.length} | Current: {currentImageIndex + 1}
-      </div>
-      
       {/* Main Image */}
       <div className="relative w-full h-full">
         {images.map((image, index) => (
