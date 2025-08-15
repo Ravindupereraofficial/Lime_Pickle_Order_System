@@ -39,10 +39,10 @@ const Home: React.FC = () => {
             <div className="relative">
               <ImageCarousel 
                 images={[
-                  "/images/lime-pickle-1.jpg",
-                  "/images/lime-pickle-2.jpg", 
-                  "/images/lime-pickle-3.jpg",
-                  "/images/lime-pickle-4.jpg"
+                  "https://res.cloudinary.com/dtol8lk5b/image/upload/v1755235591/516871801_704957635752097_7789693277955808336_n_ikmnfn.jpg",
+                  "https://res.cloudinary.com/dtol8lk5b/image/upload/v1755235591/516542850_704957345752126_4691991998449596816_n_pyifx5.jpg", 
+                  "https://res.cloudinary.com/dtol8lk5b/image/upload/v1755235591/516542850_704957345752126_4691991998449596816_n_pyifx5.jpg",
+                  "https://res.cloudinary.com/dtol8lk5b/image/upload/v1755235590/312896837_104320839149116_3474329651582148420_n_jcvyce.jpg"
                 ]}
                 interval={4000}
               />

@@ -10,6 +10,12 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   interval = 4000 
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('ImageCarousel loaded with images:', images);
+    console.log('Number of images:', images.length);
+  }, [images]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,11 +28,22 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   }, [images.length, interval]);
 
   const goToImage = (index: number) => {
+    console.log(`Switching to image ${index + 1}`);
     setCurrentImageIndex(index);
   };
+  
+  // Debug current image state
+  useEffect(() => {
+    console.log(`Current image index: ${currentImageIndex}, Image: ${images[currentImageIndex]}`);
+  }, [currentImageIndex, images]);
 
   return (
     <div className="relative w-full h-96 rounded-2xl shadow-2xl overflow-hidden">
+      {/* Debug Info */}
+      <div className="absolute top-0 left-0 bg-black/80 text-white p-2 text-xs z-20">
+        Images: {images.length} | Current: {currentImageIndex + 1}
+      </div>
+      
       {/* Main Image */}
       <div className="relative w-full h-full">
         {images.map((image, index) => (
@@ -34,11 +51,32 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
             key={index}
             src={image}
             alt={`Lime Pickle ${index + 1}`}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-            }`}
+            style={{
+              opacity: index === currentImageIndex ? 1 : 0,
+              zIndex: index === currentImageIndex ? 10 : 0,
+              display: 'block'
+            }}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+            onError={(e) => {
+              console.error(`Failed to load image ${index + 1}:`, image);
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoad={() => {
+              console.log(`Successfully loaded image ${index + 1}:`, image);
+            }}
           />
         ))}
+        
+        {/* Fallback placeholder when no images load - only show if no images are loaded */}
+        <div className={`absolute inset-0 w-full h-full bg-gradient-to-br from-lime-200 to-orange-200 flex items-center justify-center transition-opacity duration-1000 ${
+          images.length === 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <div className="text-center text-gray-600">
+            <div className="text-6xl mb-4">🍋</div>
+            <div className="text-xl font-semibold">Lime Pickle Images</div>
+            <div className="text-sm">Loading...</div>
+          </div>
+        </div>
       </div>
 
       {/* Navigation Dots */}
