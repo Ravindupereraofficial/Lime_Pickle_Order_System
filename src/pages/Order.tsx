@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Calculator, CheckCircle, Mail, User, MapPin, Phone, Package, CreditCard, Truck, Shield, Star } from 'lucide-react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { ShoppingCart, Calculator, CheckCircle, Mail, User, MapPin, Phone, Package, CreditCard, Truck, Shield, Star, AlertCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import emailjs from 'emailjs-com';
 import { testEmailJS, testMinimalEmail, testDefaultTemplate } from '../lib/emailjs-test';
 
@@ -98,17 +99,13 @@ const slProvinces = [
 const Order: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  // Simple local user session check
-  const [user, setUser] = useState<any>(null);
-  useEffect(() => {
-    const localUser = localStorage.getItem('user');
-    if (!localUser) {
-      navigate('/');
-    } else {
-      setUser(JSON.parse(localUser));
-    }
-  }, [navigate]);
-  if (!user) return null;
+  const { user, isAuthenticated } = useAuth();
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  
+  // Remove the user check since we want all users to see the form
+  // if (!user) {
+  //   return null;
+  // }
 
   const {
     register,
@@ -178,16 +175,30 @@ const Order: React.FC = () => {
     }
   }, [selectedQuantity, numberOfBottles]);
 
+  const handleOrderButtonClick = () => {
+    if (!isAuthenticated) {
+      setShowLoginPopup(true);
+    }
+  };
+
   const onSubmit = async (data: OrderForm) => {
+    // Check if user is authenticated before allowing order submission
+    if (!isAuthenticated) {
+      setShowLoginPopup(true);
+      return;
+    }
+
     try {
       console.log('Submitting order with data:', data);
       console.log('Total amount:', totalAmount);
+      console.log('User ID:', user?.id);
       
-      // Save order to Supabase database
+      // Save order to Supabase database with user_id
       const { data: orderData, error } = await supabase
         .from('orders')
         .insert([
           {
+            user_id: user?.id, // Include the authenticated user's ID
             full_name: data.fullName,
             province: data.province,
             district: data.district,
@@ -302,6 +313,7 @@ const Order: React.FC = () => {
     );
   }
 
+  // Update the submit button section to show login message for unauthenticated users
   return (
     <div className="pt-16 min-h-screen bg-gradient-to-br from-gray-50 to-lime-50">
       {/* Hero Section */}
@@ -330,6 +342,35 @@ const Order: React.FC = () => {
               </div>
               
               <div className="p-8">
+                {/* Authentication Notice for Unauthenticated Users */}
+                {!isAuthenticated && (
+                  <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <AlertCircle className="w-6 h-6 text-yellow-600" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-yellow-800">Login Required</h3>
+                        <p className="text-yellow-700">
+                          Please login or create an account to place your order. You can fill out the form below, but you'll need to authenticate before submitting.
+                        </p>
+                        <div className="mt-3 flex space-x-3">
+                          <Link
+                            to="/login"
+                            className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors duration-200"
+                          >
+                            Login
+                          </Link>
+                          <Link
+                            to="/signup"
+                            className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors duration-200"
+                          >
+                            Sign Up
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                   {/* Personal Information Section */}
                   <div className="space-y-6">
@@ -623,7 +664,8 @@ const Order: React.FC = () => {
                   {/* Submit Button */}
                   <div className="pt-6">
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleOrderButtonClick}
                       disabled={isSubmitting || !totalAmount}
                       className="w-full bg-gradient-to-r from-lime-500 to-orange-500 text-white py-5 px-8 rounded-2xl font-bold text-xl hover:from-lime-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center"
                     >
@@ -632,8 +674,17 @@ const Order: React.FC = () => {
                       ) : (
                         <ShoppingCart className="w-6 h-6 mr-3" />
                       )}
-                      {isSubmitting ? 'Processing Your Order...' : 'Place Order Now'}
+                      {isSubmitting 
+                        ? 'Processing Your Order...' 
+                        : 'Place Order Now'
+                      }
                     </button>
+                    
+                    {!isAuthenticated && (
+                      <p className="mt-3 text-center text-sm text-gray-600">
+                        You can fill out the form above, but you'll need to login to submit your order.
+                      </p>
+                    )}
                   </div>
                 </form>
               </div>
@@ -856,6 +907,66 @@ const Order: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Login Required Popup Modal */}
+      {showLoginPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <AlertCircle className="w-6 h-6 text-yellow-600 mr-3" />
+                Login Required
+              </h2>
+              <button
+                onClick={() => setShowLoginPopup(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-10 h-10 text-yellow-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Please Login to Continue
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  You need to be logged in to place your order. Please login or create an account to proceed.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Link
+                  to="/login"
+                  onClick={() => setShowLoginPopup(false)}
+                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-lime-500 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200"
+                >
+                  Login to Existing Account
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setShowLoginPopup(false)}
+                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors duration-200"
+                >
+                  Create New Account
+                </Link>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={() => setShowLoginPopup(false)}
+                  className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+                >
+                  Continue Browsing
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

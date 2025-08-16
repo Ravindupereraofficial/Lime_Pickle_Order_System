@@ -1,76 +1,150 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-
-interface SignupProps {
-  onSuccess?: () => void;
+interface SignupFormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
-const Signup: React.FC<SignupProps> = ({ onSuccess }) => {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+const Signup: React.FC = () => {
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<SignupFormData>();
   const navigate = useNavigate();
+  const { signup } = useAuth();
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const onSubmit = async (data: any) => {
-    const { email, password, full_name, whatsapp_number } = data;
-    // Check if user already exists
-    const { data: existing, error: checkError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .limit(1);
-    if (checkError) {
-      alert('Signup failed. Please try again.');
-      return;
-    }
-    if (existing && existing.length > 0) {
-      alert('Email already registered. Please login.');
-      return;
-    }
-    // Insert new user
-    const { error } = await supabase
-      .from('users')
-      .insert({
-        full_name,
-        whatsapp_number,
-        email,
-        password
+  const password = watch('password');
+
+  const onSubmit = async (data: SignupFormData) => {
+    try {
+      setMessage(null);
+      
+      // Validate password confirmation
+      if (data.password !== data.confirmPassword) {
+        setMessage({ type: 'error', text: 'Passwords do not match' });
+        return;
+      }
+
+      const result = await signup({
+        email: data.email,
+        password: data.password
       });
-    if (error) {
-      alert('Signup failed. Please try again.');
-    } else {
-      alert('Signup successful! You can now login.');
-      if (onSuccess) onSuccess();
-      else navigate('/login');
+
+      if (result.success) {
+        setMessage({ type: 'success', text: result.message });
+        // Redirect to login after successful signup
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        setMessage({ type: 'error', text: result.message });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'An unexpected error occurred. Please try again.' });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded shadow-md w-full max-w-md space-y-6">
-      <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
-      <div>
-        <label>Full Name</label>
-        <input {...register('full_name', { required: true })} className="w-full border p-2 rounded" />
-        {errors.full_name && <span className="text-red-500 text-sm">Full name is required</span>}
+    <div className="min-h-screen bg-gradient-to-br from-lime-50 to-orange-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
+          <p className="text-gray-600">Join us to start ordering delicious lime pickle</p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded-2xl shadow-2xl space-y-6">
+          {/* Message Display */}
+          {message && (
+            <div className={`p-4 rounded-lg ${
+              message.type === 'success' 
+                ? 'bg-green-100 text-green-700 border border-green-200' 
+                : 'bg-red-100 text-red-700 border border-red-200'
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Email *
+            </label>
+            <input 
+              {...register('email', { 
+                required: 'Email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Please enter a valid email address'
+                }
+              })} 
+              type="email" 
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200"
+              placeholder="Enter your email address"
+            />
+            {errors.email && (
+              <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Password *
+            </label>
+            <input 
+              {...register('password', { 
+                required: 'Password is required',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters long'
+                }
+              })} 
+              type="password" 
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200"
+              placeholder="Enter your password"
+            />
+            {errors.password && (
+              <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Confirm Password *
+            </label>
+            <input 
+              {...register('confirmPassword', { 
+                required: 'Please confirm your password',
+                validate: value => value === password || 'Passwords do not match'
+              })} 
+              type="password" 
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200"
+              placeholder="Confirm your password"
+            />
+            {errors.confirmPassword && (
+              <p className="mt-2 text-sm text-red-600">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={isSubmitting} 
+            className="w-full bg-gradient-to-r from-lime-500 to-orange-500 text-white py-3 px-6 rounded-xl font-bold text-lg hover:from-lime-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+          >
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+          </button>
+
+          <div className="text-center">
+            <p className="text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-lime-600 hover:text-lime-700 font-semibold">
+                Login here
+              </Link>
+            </p>
+          </div>
+        </form>
       </div>
-      <div>
-        <label>WhatsApp Number</label>
-        <input {...register('whatsapp_number', { required: true })} className="w-full border p-2 rounded" />
-        {errors.whatsapp_number && <span className="text-red-500 text-sm">WhatsApp number is required</span>}
-      </div>
-      <div>
-        <label>Email</label>
-        <input {...register('email', { required: true })} type="email" className="w-full border p-2 rounded" />
-        {errors.email && <span className="text-red-500 text-sm">Email is required</span>}
-      </div>
-      <div>
-        <label>Password</label>
-        <input {...register('password', { required: true })} type="password" className="w-full border p-2 rounded" />
-        {errors.password && <span className="text-red-500 text-sm">Password is required</span>}
-      </div>
-      <button type="submit" disabled={isSubmitting} className="w-full bg-lime-500 text-white py-2 rounded font-bold">Sign Up</button>
-    </form>
+    </div>
   );
 };
 
