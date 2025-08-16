@@ -5,6 +5,7 @@ interface ImageCarouselProps {
   interval?: number;
 }
 
+
 const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, interval = 4000 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -95,4 +96,6 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, interval = 4000 }
     </div>
   );
 };
+
+export default ImageCarousel;
 

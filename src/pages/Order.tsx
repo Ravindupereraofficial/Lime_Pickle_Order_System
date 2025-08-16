@@ -8,11 +8,15 @@ import { testEmailJS, testMinimalEmail, testDefaultTemplate } from '../lib/email
 
 interface OrderForm {
   fullName: string;
-  address: string;
-  deliveryAddress: string;
   province: string;
   district: string;
   postalCode: string;
+  addressLine1: string;
+  addressLine2: string;
+  addressDistrict: string;
+  deliveryAddressLine1: string;
+  deliveryAddressLine2: string;
+  deliveryAddressDistrict: string;
   whatsappNumber: string;
   quantity: string;
   numberOfBottles: number;
@@ -108,6 +112,7 @@ const Order: React.FC = () => {
   const [districts, setDistricts] = useState<{ name: string; postalCode: string }[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  const [sameAsAddress, setSameAsAddress] = useState(false);
   // Update districts when province changes
   useEffect(() => {
     const provinceObj = slProvinces.find((p) => p.name === selectedProvince);
@@ -174,8 +179,15 @@ const Order: React.FC = () => {
         .insert([
           {
             full_name: data.fullName,
-            address: data.address,
-            delivery_address: data.deliveryAddress,
+            province: data.province,
+            district: data.district,
+            postal_code: data.postalCode,
+            address_line1: data.addressLine1,
+            address_line2: data.addressLine2,
+            address_district: data.addressDistrict,
+            delivery_address_line1: data.deliveryAddressLine1,
+            delivery_address_line2: data.deliveryAddressLine2,
+            delivery_address_district: data.deliveryAddressDistrict,
             whatsapp_number: data.whatsappNumber,
             quantity: data.quantity,
             number_of_bottles: Number(data.numberOfBottles),
@@ -202,17 +214,7 @@ const Order: React.FC = () => {
           from_name: data.fullName,                        // Customer name
           to_name: 'ravindurandika2004@gmail.com',         // Recipient name
           recipient_email: 'ravindurandika2004@gmail.com', // Alternative recipient email
-          message: `New Order Received!
-
-Order ID: ${orderId}
-Customer Name: ${data.fullName}
-Address: ${data.address}
-Delivery Address: ${data.deliveryAddress}
-WhatsApp: ${data.whatsappNumber}
-Quantity: ${data.quantity}
-Number of Bottles: ${data.numberOfBottles}
-
-Please contact the customer via WhatsApp to confirm this order.`,
+          message: `New Order Received!\n\nOrder ID: ${orderId}\nCustomer Name: ${data.fullName}\nProvince: ${data.province}\nDistrict: ${data.district}\nPostal Code: ${data.postalCode}\nAddress: ${data.addressLine1}, ${data.addressLine2}, ${data.addressDistrict}\nDelivery Address: ${data.deliveryAddressLine1}, ${data.deliveryAddressLine2}, ${data.deliveryAddressDistrict}\nWhatsApp: ${data.whatsappNumber}\nQuantity: ${data.quantity}\nNumber of Bottles: ${data.numberOfBottles}\n\nPlease contact the customer via WhatsApp to confirm this order.`,
           total_amount: totalAmount,
           order_date: new Date().toLocaleDateString()
         };
@@ -320,6 +322,28 @@ Please contact the customer via WhatsApp to confirm this order.`,
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Full Name */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Full Name *
+                        </label>
+                        <div className="relative">
+                          <input
+                            {...register('fullName', { required: 'Full name is required' })}
+                            type="text"
+                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg"
+                            placeholder="Enter your full name"
+                          />
+                          <User className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        </div>
+                        {errors.fullName && (
+                          <p className="mt-2 text-sm text-red-600 flex items-center">
+                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                            {errors.fullName.message}
+                          </p>
+                        )}
+                      </div>
+
                       {/* Province Dropdown */}
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -390,68 +414,101 @@ Please contact the customer via WhatsApp to confirm this order.`,
                         />
                       </div>
 
-                      {/* ...existing code for Full Name, Address, Delivery Address, WhatsApp Number... */}
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Full Name *
-                        </label>
-                        <div className="relative">
+                      {/* Address Fields */}
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Address Line 1 *</label>
                           <input
-                            {...register('fullName', { required: 'Full name is required' })}
+                            {...register('addressLine1', { required: 'Address Line 1 is required' })}
                             type="text"
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg"
-                            placeholder="Enter your full name"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                            placeholder="House/Flat, No."
                           />
-                          <User className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          {errors.addressLine1 && <p className="mt-1 text-xs text-red-600">{errors.addressLine1.message}</p>}
                         </div>
-                        {errors.fullName && (
-                          <p className="mt-2 text-sm text-red-600 flex items-center">
-                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                            {errors.fullName.message}
-                          </p>
-                        )}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Address Line 2 *</label>
+                          <input
+                            {...register('addressLine2', { required: 'Address Line 2 is required' })}
+                            type="text"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                            placeholder="Street, Area"
+                          />
+                          {errors.addressLine2 && <p className="mt-1 text-xs text-red-600">{errors.addressLine2.message}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">Address District *</label>
+                          <input
+                            {...register('addressDistrict', { required: 'Address District is required' })}
+                            type="text"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                            placeholder="Village/Town"
+                          />
+                          {errors.addressDistrict && <p className="mt-1 text-xs text-red-600">{errors.addressDistrict.message}</p>}
+                        </div>
                       </div>
 
+                      {/* Delivery Address Fields with Same as Address Checkbox */}
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Address *
-                        </label>
-                        <div className="relative">
-                          <textarea
-                            {...register('address', { required: 'Address is required' })}
-                            rows={3}
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg resize-none"
-                            placeholder="Enter your complete address"
+                        <div className="flex items-center mb-2">
+                          <input
+                            id="sameAsAddress"
+                            type="checkbox"
+                            checked={sameAsAddress}
+                            onChange={e => {
+                              setSameAsAddress(e.target.checked);
+                              if (e.target.checked) {
+                                setValue('deliveryAddressLine1', watch('addressLine1'));
+                                setValue('deliveryAddressLine2', watch('addressLine2'));
+                                setValue('deliveryAddressDistrict', watch('addressDistrict'));
+                              } else {
+                                setValue('deliveryAddressLine1', '');
+                                setValue('deliveryAddressLine2', '');
+                                setValue('deliveryAddressDistrict', '');
+                              }
+                            }}
+                            className="mr-2"
                           />
-                          <MapPin className="absolute right-4 top-4 w-5 h-5 text-gray-400" />
+                          <label htmlFor="sameAsAddress" className="text-sm font-medium text-gray-700">Same as Address</label>
                         </div>
-                        {errors.address && (
-                          <p className="mt-2 text-sm text-red-600 flex items-center">
-                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                            {errors.address.message}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Delivery Address *
-                        </label>
-                        <div className="relative">
-                          <textarea
-                            {...register('deliveryAddress', { required: 'Delivery address is required' })}
-                            rows={3}
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg resize-none"
-                            placeholder="Enter delivery address (if different from above)"
-                          />
-                          <Truck className="absolute right-4 top-4 w-5 h-5 text-gray-400" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address Line 1 *</label>
+                            <input
+                              {...register('deliveryAddressLine1', { required: 'Delivery Address Line 1 is required' })}
+                              type="text"
+                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                              placeholder="House/Flat, No."
+                              readOnly={sameAsAddress}
+                              value={sameAsAddress ? watch('addressLine1') : undefined}
+                            />
+                            {errors.deliveryAddressLine1 && <p className="mt-1 text-xs text-red-600">{errors.deliveryAddressLine1.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address Line 2 *</label>
+                            <input
+                              {...register('deliveryAddressLine2', { required: 'Delivery Address Line 2 is required' })}
+                              type="text"
+                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                              placeholder="Street, Area"
+                              readOnly={sameAsAddress}
+                              value={sameAsAddress ? watch('addressLine2') : undefined}
+                            />
+                            {errors.deliveryAddressLine2 && <p className="mt-1 text-xs text-red-600">{errors.deliveryAddressLine2.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address District *</label>
+                            <input
+                              {...register('deliveryAddressDistrict', { required: 'Delivery Address District is required' })}
+                              type="text"
+                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                              placeholder="Village/Town"
+                              readOnly={sameAsAddress}
+                              value={sameAsAddress ? watch('addressDistrict') : undefined}
+                            />
+                            {errors.deliveryAddressDistrict && <p className="mt-1 text-xs text-red-600">{errors.deliveryAddressDistrict.message}</p>}
+                          </div>
                         </div>
-                        {errors.deliveryAddress && (
-                          <p className="mt-2 text-sm text-red-600 flex items-center">
-                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                            {errors.deliveryAddress.message}
-                          </p>
-                        )}
                       </div>
 
                       <div className="md:col-span-2">
