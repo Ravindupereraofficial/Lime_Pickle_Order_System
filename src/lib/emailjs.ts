@@ -1,20 +1,20 @@
 import emailjs from 'emailjs-com';
 
-// EmailJS configuration
+// EmailJS configuration - Updated with working template
 export const EMAILJS_CONFIG = {
   SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_loylxbw',
-  ORDER_TEMPLATE_ID: import.meta.env.VITE_EMAILJS_ORDER_TEMPLATE_ID || 'template_u565g9w',
+  ORDER_TEMPLATE_ID: import.meta.env.VITE_EMAILJS_ORDER_TEMPLATE_ID || 'template_u565g9w', // Use the correct template ID
   CONTACT_TEMPLATE_ID: import.meta.env.VITE_EMAILJS_CONTACT_TEMPLATE_ID || 'template_u565g9w',
   PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '00UOPjZ64lj9YNzvA'
 };
 
 // Business email from environment
-export const BUSINESS_EMAIL = import.meta.env.VITE_BUSINESS_EMAIL || 'limepickle@email.com';
+export const BUSINESS_EMAIL = import.meta.env.VITE_BUSINESS_EMAIL || 'ravindurandika2004@gmail.com';
 
 // Initialize EmailJS
 emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
 
-// Send order email
+// Send order email with simplified template variables
 export const sendOrderEmail = async (orderData: {
   fullName: string;
   address: string;
@@ -25,16 +25,29 @@ export const sendOrderEmail = async (orderData: {
   totalAmount: number;
   orderId: string;
 }) => {
+  // Format the message for a simple template
+  const orderMessage = `
+New Order Received!
+
+Order ID: ${orderData.orderId}
+Customer Name: ${orderData.fullName}
+Address: ${orderData.address}
+Delivery Address: ${orderData.deliveryAddress}
+WhatsApp: ${orderData.whatsappNumber}
+Quantity: ${orderData.quantity}
+Number of Bottles: ${orderData.numberOfBottles}
+Total Amount: LKR ${orderData.totalAmount}
+Order Date: ${new Date().toLocaleDateString()}
+
+Please contact the customer via WhatsApp to confirm this order.
+  `.trim();
+
   const templateParams = {
-    to_email: BUSINESS_EMAIL,
-    from_name: orderData.fullName,
-    order_id: orderData.orderId,
-    full_name: orderData.fullName,
-    address: orderData.address,
-    delivery_address: orderData.deliveryAddress,
-    whatsapp_number: orderData.whatsappNumber,
-    quantity: orderData.quantity,
-    number_of_bottles: orderData.numberOfBottles,
+    email: BUSINESS_EMAIL,                    // Recipient email (works!)
+    from_name: orderData.fullName,            // Customer name
+    to_name: BUSINESS_EMAIL,                  // Recipient name
+    recipient_email: BUSINESS_EMAIL,          // Alternative recipient email
+    message: orderMessage,
     total_amount: orderData.totalAmount,
     order_date: new Date().toLocaleDateString()
   };
@@ -47,7 +60,7 @@ export const sendOrderEmail = async (orderData: {
   );
 };
 
-// Send contact email
+// Send contact email with simplified template variables
 export const sendContactEmail = async (contactData: {
   name: string;
   email: string;
@@ -57,7 +70,8 @@ export const sendContactEmail = async (contactData: {
     to_email: BUSINESS_EMAIL,
     from_name: contactData.name,
     from_email: contactData.email,
-    message: contactData.message
+    message: contactData.message,
+    subject: 'New Contact Form Submission'
   };
 
   return emailjs.send(

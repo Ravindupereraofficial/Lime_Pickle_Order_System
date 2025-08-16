@@ -4,21 +4,98 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Calculator, CheckCircle, Mail, User, MapPin, Phone, Package, CreditCard, Truck, Shield, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import emailjs from 'emailjs-com';
-import { testEmailJS, testMinimalEmail } from '../lib/emailjs-test';
+import { testEmailJS, testMinimalEmail, testDefaultTemplate } from '../lib/emailjs-test';
 
 interface OrderForm {
   fullName: string;
   address: string;
   deliveryAddress: string;
+  province: string;
+  district: string;
+  postalCode: string;
   whatsappNumber: string;
   quantity: string;
   numberOfBottles: number;
 }
+// Sri Lanka provinces, districts, and main postal codes
+const slProvinces = [
+  {
+    name: 'Western',
+    districts: [
+      { name: 'Colombo', postalCode: '00100' },
+      { name: 'Gampaha', postalCode: '11000' },
+      { name: 'Kalutara', postalCode: '12000' }
+    ]
+  },
+  {
+    name: 'Central',
+    districts: [
+      { name: 'Kandy', postalCode: '20000' },
+      { name: 'Matale', postalCode: '21000' },
+      { name: 'Nuwara Eliya', postalCode: '22000' }
+    ]
+  },
+  {
+    name: 'Southern',
+    districts: [
+      { name: 'Galle', postalCode: '80000' },
+      { name: 'Matara', postalCode: '81000' },
+      { name: 'Hambantota', postalCode: '82000' }
+    ]
+  },
+  {
+    name: 'Northern',
+    districts: [
+      { name: 'Jaffna', postalCode: '40000' },
+      { name: 'Kilinochchi', postalCode: '42000' },
+      { name: 'Mannar', postalCode: '43000' },
+      { name: 'Mullaitivu', postalCode: '42054' },
+      { name: 'Vavuniya', postalCode: '43000' }
+    ]
+  },
+  {
+    name: 'Eastern',
+    districts: [
+      { name: 'Trincomalee', postalCode: '31000' },
+      { name: 'Batticaloa', postalCode: '30000' },
+      { name: 'Ampara', postalCode: '32000' }
+    ]
+  },
+  {
+    name: 'North Western',
+    districts: [
+      { name: 'Kurunegala', postalCode: '60000' },
+      { name: 'Puttalam', postalCode: '61200' }
+    ]
+  },
+  {
+    name: 'North Central',
+    districts: [
+      { name: 'Anuradhapura', postalCode: '50000' },
+      { name: 'Polonnaruwa', postalCode: '51000' }
+    ]
+  },
+  {
+    name: 'Uva',
+    districts: [
+      { name: 'Badulla', postalCode: '90000' },
+      { name: 'Monaragala', postalCode: '91000' }
+    ]
+  },
+  {
+    name: 'Sabaragamuwa',
+    districts: [
+      { name: 'Ratnapura', postalCode: '70000' },
+      { name: 'Kegalle', postalCode: '71000' }
+    ]
+  }
+];
 
 const Order: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+
   const {
     register,
     handleSubmit,
@@ -26,6 +103,36 @@ const Order: React.FC = () => {
     setValue,
     formState: { errors, isSubmitting }
   } = useForm<OrderForm>();
+
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [districts, setDistricts] = useState<{ name: string; postalCode: string }[]>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  // Update districts when province changes
+  useEffect(() => {
+    const provinceObj = slProvinces.find((p) => p.name === selectedProvince);
+    if (provinceObj) {
+      setDistricts(provinceObj.districts);
+    } else {
+      setDistricts([]);
+    }
+    setSelectedDistrict('');
+    setPostalCode('');
+    setValue('district', '');
+    setValue('postalCode', '');
+  }, [selectedProvince, setValue]);
+
+  // Update postal code when district changes
+  useEffect(() => {
+    const districtObj = districts.find((d) => d.name === selectedDistrict);
+    if (districtObj) {
+      setPostalCode(districtObj.postalCode);
+      setValue('postalCode', districtObj.postalCode);
+    } else {
+      setPostalCode('');
+      setValue('postalCode', '');
+    }
+  }, [selectedDistrict, districts, setValue]);
 
   const [totalAmount, setTotalAmount] = useState(0);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -91,15 +198,21 @@ const Order: React.FC = () => {
         
         // Use the EmailJS configuration from the lib
         const emailParams = {
-          to_email: 'ravindurandika2004@gmail.com',
-          from_name: data.fullName,
-          order_id: orderId,
-          full_name: data.fullName,
-          address: data.address,
-          delivery_address: data.deliveryAddress,
-          whatsapp_number: data.whatsappNumber,
-          quantity: data.quantity,
-          number_of_bottles: data.numberOfBottles,
+          email: 'ravindurandika2004@gmail.com',           // Recipient email (works!)
+          from_name: data.fullName,                        // Customer name
+          to_name: 'ravindurandika2004@gmail.com',         // Recipient name
+          recipient_email: 'ravindurandika2004@gmail.com', // Alternative recipient email
+          message: `New Order Received!
+
+Order ID: ${orderId}
+Customer Name: ${data.fullName}
+Address: ${data.address}
+Delivery Address: ${data.deliveryAddress}
+WhatsApp: ${data.whatsappNumber}
+Quantity: ${data.quantity}
+Number of Bottles: ${data.numberOfBottles}
+
+Please contact the customer via WhatsApp to confirm this order.`,
           total_amount: totalAmount,
           order_date: new Date().toLocaleDateString()
         };
@@ -109,13 +222,13 @@ const Order: React.FC = () => {
         // Send email using EmailJS
         const result = await emailjs.send(
           'service_loylxbw',  // Your EmailJS Service ID
-          'template_u565g9w', // Your EmailJS Template ID
+          'template_u565g9w', // Use the correct template ID
           emailParams,
           '00UOPjZ64lj9YNzvA' // Your EmailJS Public Key
         );
 
         console.log('Email sent successfully!', result);
-      } catch (emailError) {
+      } catch (emailError: any) {
         console.error('EmailJS Error Details:', {
           message: emailError.message,
           status: emailError.status,
@@ -140,7 +253,7 @@ const Order: React.FC = () => {
         });
       }, 3000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting order:', error);
       console.error('Error details:', {
         message: error.message,
@@ -205,8 +318,79 @@ const Order: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
                       Personal Information
                     </h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Province Dropdown */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Province *
+                        </label>
+                        <select
+                          {...register('province', { required: 'Province is required' })}
+                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg appearance-none cursor-pointer"
+                          value={selectedProvince}
+                          onChange={e => {
+                            setSelectedProvince(e.target.value);
+                            setValue('province', e.target.value);
+                          }}
+                        >
+                          <option value="">Select province</option>
+                          {slProvinces.map((prov) => (
+                            <option key={prov.name} value={prov.name}>{prov.name}</option>
+                          ))}
+                        </select>
+                        {errors.province && (
+                          <p className="mt-2 text-sm text-red-600 flex items-center">
+                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                            {errors.province.message}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* District Dropdown */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          District *
+                        </label>
+                        <select
+                          {...register('district', { required: 'District is required' })}
+                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg appearance-none cursor-pointer"
+                          value={selectedDistrict}
+                          onChange={e => {
+                            setSelectedDistrict(e.target.value);
+                            setValue('district', e.target.value);
+                          }}
+                          disabled={!selectedProvince}
+                        >
+                          <option value="">{selectedProvince ? 'Select district' : 'Select province first'}</option>
+                          {districts.map((dist) => (
+                            <option key={dist.name} value={dist.name}>{dist.name}</option>
+                          ))}
+                        </select>
+                        {errors.district && (
+                          <p className="mt-2 text-sm text-red-600 flex items-center">
+                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                            {errors.district.message}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Postal Code (auto-filled) */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Postal Code
+                        </label>
+                        <input
+                          {...register('postalCode')}
+                          type="text"
+                          className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 transition-all duration-200 text-lg bg-gray-100"
+                          value={postalCode}
+                          readOnly
+                          placeholder="Postal code will appear here"
+                        />
+                      </div>
+
+                      {/* ...existing code for Full Name, Address, Delivery Address, WhatsApp Number... */}
                       <div className="md:col-span-2">
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                           Full Name *
@@ -542,24 +726,57 @@ const Order: React.FC = () => {
                 </h3>
               </div>
               
-              <div className="p-6">
+              <div className="p-6 space-y-3">
                 <button
                   onClick={async () => {
-                    console.log('Testing EmailJS...');
+                    console.log('Testing EmailJS with default template...');
+                    const result = await testDefaultTemplate();
+                    if (result.success) {
+                      alert('✅ Default template test email sent successfully! Check your email.');
+                    } else {
+                      alert('❌ Default template test failed. Check console for details.');
+                    }
+                  }}
+                  className="w-full bg-green-500 text-white py-3 px-4 rounded-xl hover:bg-green-600 transition-colors duration-200 flex items-center justify-center font-medium"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Test Different Variables
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    console.log('Testing EmailJS with minimal parameters...');
+                    const result = await testMinimalEmail();
+                    if (result.success) {
+                      alert('✅ Minimal test email sent successfully! Check your email.');
+                    } else {
+                      alert('❌ Minimal test failed. Check console for details.');
+                    }
+                  }}
+                  className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center font-medium"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Test Minimal Email
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    console.log('Testing EmailJS with full parameters...');
                     const result = await testEmailJS();
                     if (result.success) {
-                      alert('Test email sent successfully! Check your email.');
+                      alert('✅ Full test email sent successfully! Check your email.');
                     } else {
-                      alert('Test email failed. Check console for details.');
+                      alert('❌ Full test failed. Check console for details.');
                     }
                   }}
                   className="w-full bg-yellow-500 text-white py-3 px-4 rounded-xl hover:bg-yellow-600 transition-colors duration-200 flex items-center justify-center font-medium"
                 >
                   <Mail className="w-4 h-4 mr-2" />
-                  Test EmailJS Connection
+                  Test Full Email
                 </button>
+                
                 <p className="text-xs text-yellow-700 mt-3 text-center">
-                  This button is for testing only. Remove after EmailJS is working.
+                  Test buttons for debugging. Remove after EmailJS is working.
                 </p>
               </div>
             </div>
