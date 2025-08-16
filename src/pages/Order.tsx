@@ -210,16 +210,22 @@ const Order: React.FC = () => {
         
         // Use the EmailJS configuration from the lib
         const emailParams = {
-          email: 'ravindurandika2004@gmail.com',           // Recipient email (works!)
-          from_name: data.fullName,                        // Customer name
-          to_name: 'ravindurandika2004@gmail.com',         // Recipient name
-          recipient_email: 'ravindurandika2004@gmail.com', // Alternative recipient email
-          message: `New Order Received!\n\nOrder ID: ${orderId}\nCustomer Name: ${data.fullName}\nProvince: ${data.province}\nDistrict: ${data.district}\nPostal Code: ${data.postalCode}\nAddress: ${data.addressLine1}, ${data.addressLine2}, ${data.addressDistrict}\nDelivery Address: ${data.deliveryAddressLine1}, ${data.deliveryAddressLine2}, ${data.deliveryAddressDistrict}\nWhatsApp: ${data.whatsappNumber}\nQuantity: ${data.quantity}\nNumber of Bottles: ${data.numberOfBottles}\n\nPlease contact the customer via WhatsApp to confirm this order.`,
-          total_amount: totalAmount,
-          order_date: new Date().toLocaleDateString()
+          email: "ckaushi723@gmail.com", // Required for EmailJS 'To Email' field
+          orderId: orderId,
+          order_date: new Date().toLocaleDateString(),
+          full_name: data.fullName,
+          address: `${data.addressLine1}, ${data.addressLine2}, ${data.addressDistrict}`,
+          delivery_address: `${data.deliveryAddressLine1}, ${data.deliveryAddressLine2}, ${data.deliveryAddressDistrict}`,
+          province: data.province,
+          district: data.district,
+          postal_code: data.postalCode,
+          whatsapp_number: data.whatsappNumber,
+          quantity: data.quantity,
+          number_of_bottles: data.numberOfBottles,
+          total_amount: totalAmount
         };
 
-        console.log('Email parameters:', emailParams);
+  console.log('Email parameters (full):', JSON.stringify(emailParams, null, 2));
 
         // Send email using EmailJS
         const result = await emailjs.send(
@@ -474,38 +480,38 @@ const Order: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address Line 1 *</label>
-                            <input
-                              {...register('deliveryAddressLine1', { required: 'Delivery Address Line 1 is required' })}
-                              type="text"
-                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
-                              placeholder="House/Flat, No."
-                              readOnly={sameAsAddress}
-                              value={sameAsAddress ? watch('addressLine1') : undefined}
-                            />
+                              <input
+                                {...register('deliveryAddressLine1', { required: 'Delivery Address Line 1 is required' })}
+                                type="text"
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                                placeholder="House/Flat, No."
+                                readOnly={sameAsAddress}
+                                value={sameAsAddress ? watch('addressLine1') || '' : watch('deliveryAddressLine1') || ''}
+                              />
                             {errors.deliveryAddressLine1 && <p className="mt-1 text-xs text-red-600">{errors.deliveryAddressLine1.message}</p>}
                           </div>
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address Line 2 *</label>
-                            <input
-                              {...register('deliveryAddressLine2', { required: 'Delivery Address Line 2 is required' })}
-                              type="text"
-                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
-                              placeholder="Street, Area"
-                              readOnly={sameAsAddress}
-                              value={sameAsAddress ? watch('addressLine2') : undefined}
-                            />
+                              <input
+                                {...register('deliveryAddressLine2', { required: 'Delivery Address Line 2 is required' })}
+                                type="text"
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                                placeholder="Street, Area"
+                                readOnly={sameAsAddress}
+                                value={sameAsAddress ? watch('addressLine2') || '' : watch('deliveryAddressLine2') || ''}
+                              />
                             {errors.deliveryAddressLine2 && <p className="mt-1 text-xs text-red-600">{errors.deliveryAddressLine2.message}</p>}
                           </div>
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Delivery Address District *</label>
-                            <input
-                              {...register('deliveryAddressDistrict', { required: 'Delivery Address District is required' })}
-                              type="text"
-                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
-                              placeholder="Village/Town"
-                              readOnly={sameAsAddress}
-                              value={sameAsAddress ? watch('addressDistrict') : undefined}
-                            />
+                              <input
+                                {...register('deliveryAddressDistrict', { required: 'Delivery Address District is required' })}
+                                type="text"
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-lime-100 focus:border-lime-500 text-lg"
+                                placeholder="Village/Town"
+                                readOnly={sameAsAddress}
+                                value={sameAsAddress ? watch('addressDistrict') || '' : watch('deliveryAddressDistrict') || ''}
+                              />
                             {errors.deliveryAddressDistrict && <p className="mt-1 text-xs text-red-600">{errors.deliveryAddressDistrict.message}</p>}
                           </div>
                         </div>
