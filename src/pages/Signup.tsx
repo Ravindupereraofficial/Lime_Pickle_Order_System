@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SignupFormData {
@@ -12,6 +12,7 @@ interface SignupFormData {
 const Signup: React.FC = () => {
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<SignupFormData>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { signup } = useAuth();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -34,9 +35,12 @@ const Signup: React.FC = () => {
 
       if (result.success) {
         setMessage({ type: 'success', text: result.message });
-        // Redirect to login after successful signup
+        // Redirect to login after successful signup, preserving the redirect state
         setTimeout(() => {
-          navigate('/login');
+          navigate('/login', { 
+            state: { from: location.state?.from || '/' },
+            replace: true 
+          });
         }, 2000);
       } else {
         setMessage({ type: 'error', text: result.message });
