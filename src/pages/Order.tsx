@@ -5,6 +5,7 @@ import { ShoppingCart, Calculator, CheckCircle, User, MapPin, Phone, Package, Cr
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import emailjs from 'emailjs-com';
+import jsPDF from 'jspdf';
 
 interface OrderForm {
   fullName: string;
@@ -195,6 +196,180 @@ We'll contact you via WhatsApp within 1 hour to confirm the details.
     window.URL.revokeObjectURL(url);
   };
 
+// Generate Professional PDF Order Report
+const generatePDFReport = (orderData: OrderForm, orderId: string) => {
+  const pdf = new jsPDF();
+  
+  // Colors (RGB values for jsPDF)
+  const primaryGreen = '#22c55e';
+  const darkGray = '#323232';
+  const lightGray = '#646464';
+  const accentGreen = '#16a34a';
+  
+  // Add decorative header background
+  pdf.setFillColor(248, 250, 252);
+  pdf.rect(0, 0, 210, 40, 'F');
+  
+  // Add subtle border
+  pdf.setDrawColor(226, 232, 240);
+  pdf.setLineWidth(0.5);
+  pdf.rect(10, 10, 190, 277);
+  
+  // Company Logo Area (decorative circle)
+  pdf.setFillColor(34, 197, 94);
+  pdf.circle(30, 25, 8, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('CP', 30, 28, { align: 'center' });
+  
+  // Company Header
+  pdf.setFontSize(28);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('CEYLONE PLATTER HUB', 105, 20, { align: 'center' });
+  
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('🌶️ Lime Pickle Order Report 🌶️', 105, 32, { align: 'center' });
+  
+  // Decorative line under header
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(1);
+  pdf.line(20, 42, 190, 42);
+  
+  // Order Information Box
+  pdf.setFillColor(248, 250, 252);
+  pdf.roundedRect(20, 50, 170, 25, 3, 3, 'F');
+  
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`📋 Order ID: ${orderId}`, 25, 60);
+  pdf.text(`📅 Date: ${new Date().toLocaleDateString()}`, 25, 68);
+  pdf.text(`🕐 Time: ${new Date().toLocaleTimeString()}`, 120, 60);
+  pdf.text(`📍 Status: Processing`, 120, 68);
+  
+  // Customer Information Section
+  let yPos = 90;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('👤 Customer Information', 28, yPos + 5);
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`Full Name: ${orderData.fullName}`, 25, yPos + 18);
+  pdf.text(`WhatsApp: ${orderData.whatsappNumber}`, 25, yPos + 28);
+  
+  // Delivery Address Section
+  yPos = 130;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('🏠 Delivery Address', 28, yPos + 5);
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`Address Line 1: ${orderData.addressLine1}`, 25, yPos + 18);
+  pdf.text(`Address Line 2: ${orderData.addressLine2}`, 25, yPos + 28);
+  pdf.text(`Address District: ${orderData.addressDistrict}`, 25, yPos + 38);
+  pdf.text(`Province: ${orderData.province}`, 25, yPos + 48);
+  pdf.text(`District: ${orderData.district}`, 120, yPos + 38);
+  pdf.text(`Postal Code: ${orderData.postalCode}`, 120, yPos + 48);
+  
+  // Order Details Section
+  yPos = 200;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('🛒 Order Details', 28, yPos + 5);
+  
+  // Order details box
+  pdf.setFillColor(252, 254, 252);
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(0.5);
+  pdf.roundedRect(25, yPos + 10, 160, 35, 2, 2, 'FD');
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`Product: 🫙 Lime Pickle (Premium Quality)`, 30, yPos + 20);
+  pdf.text(`Size: ${orderData.quantity}`, 30, yPos + 30);
+  pdf.text(`Number of Bottles: ${orderData.numberOfBottles}`, 30, yPos + 40);
+  pdf.text(`Price per Bottle: LKR ${priceList[orderData.quantity as keyof typeof priceList]}/=`, 120, yPos + 30);
+  
+  // Total Amount (highlighted box)
+  yPos = 250;
+  pdf.setFillColor(34, 197, 94);
+  pdf.roundedRect(20, yPos, 170, 15, 3, 3, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(`💰 Total Amount: LKR ${totalAmount.toLocaleString()}/=`, 25, yPos + 10);
+  
+  // Order Process Section
+  yPos = 275;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('📋 Order Process', 28, yPos + 5);
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  
+  const processSteps = [
+    '✅ Order Confirmation - Via WhatsApp within 1 hour',
+    '👨‍🍳 Fresh Preparation - Handcrafted with care',
+    '📦 Quality Packaging - Secure & hygienic',
+    '🚚 Home Delivery - Within 2-3 days',
+    '💵 Payment - Cash on delivery'
+  ];
+  
+  processSteps.forEach((step, index) => {
+    pdf.text(step, 25, yPos + 20 + (index * 10));
+  });
+  
+  // Footer with decorative elements
+  pdf.setFillColor(248, 250, 252);
+  pdf.rect(0, 340, 210, 40, 'F');
+  
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(0.5);
+  pdf.line(20, 345, 190, 345);
+  
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('🙏 Thank you for choosing Ceylone Platter Hub! 🙏', 105, 355, { align: 'center' });
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('We\'ll contact you shortly via WhatsApp to confirm your order.', 105, 365, { align: 'center' });
+  pdf.text('📱 Follow us for updates and special offers!', 105, 375, { align: 'center' });
+  
+  // Save the PDF with enhanced filename
+  const fileName = `CeylonePlatterHub-Order-${orderData.fullName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+  pdf.save(fileName);
+};
   const [selectedProvince, setSelectedProvince] = useState('');
   const [districts, setDistricts] = useState<{ name: string; postalCode: string }[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -352,6 +527,9 @@ We'll contact you via WhatsApp within 1 hour to confirm the details.
       // Clear saved form data after successful submission
       clearSavedFormData();
 
+      // Generate and download PDF report automatically
+      generatePDFReport(data, orderId);
+
       setOrderSuccess(true);
       
       // Redirect to thank you page after 3 seconds
@@ -387,6 +565,20 @@ We'll contact you via WhatsApp within 1 hour to confirm the details.
           <p className="text-gray-600 mb-8 text-lg">
             Thank you for your order. We'll contact you shortly via WhatsApp to confirm the details.
           </p>
+          
+          {/* PDF Download Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => generatePDFReport(watch(), 'ORDER-' + Date.now())}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center justify-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download Order Report (PDF)
+            </button>
+          </div>
+          
           <div className="flex items-center justify-center space-x-2">
             <div className="animate-spin w-6 h-6 border-3 border-lime-500 border-t-transparent rounded-full"></div>
             <span className="text-lime-600 font-medium">Redirecting...</span>
