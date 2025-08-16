@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Calculator, CheckCircle, Mail, User, MapPin, Phone, Package, CreditCard, Truck, Shield, Star, AlertCircle, X } from 'lucide-react';
+
+import { ShoppingCart, Calculator, CheckCircle, User, MapPin, Phone, Package, CreditCard, Truck, Shield, Star, AlertCircle, X } from 'lucide-react';
+
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import emailjs from 'emailjs-com';
-import { testEmailJS, testMinimalEmail, testDefaultTemplate } from '../lib/emailjs-test';
+import jsPDF from 'jspdf';
 
 interface OrderForm {
   fullName: string;
@@ -115,6 +117,261 @@ const Order: React.FC = () => {
     formState: { errors, isSubmitting }
   } = useForm<OrderForm>();
 
+  // Save form data to localStorage whenever it changes
+  const formData = watch();
+  useEffect(() => {
+    if (Object.keys(formData).length > 0) {
+      localStorage.setItem('orderFormData', JSON.stringify(formData));
+    }
+  }, [formData]);
+
+  // Restore form data from localStorage when component mounts
+  useEffect(() => {
+    const savedData = localStorage.getItem('orderFormData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        Object.keys(parsedData).forEach(key => {
+          if (parsedData[key] !== undefined && parsedData[key] !== '') {
+            setValue(key as keyof OrderForm, parsedData[key]);
+          }
+        });
+      } catch (error) {
+        console.error('Error parsing saved form data:', error);
+      }
+    }
+  }, [setValue]);
+
+  // Clear saved form data after successful order submission
+  const clearSavedFormData = () => {
+    localStorage.removeItem('orderFormData');
+  };
+
+  // Download order summary as PDF
+  const downloadOrderSummary = () => {
+    const formData = watch();
+    if (!formData.fullName || !totalAmount) {
+      alert('Please fill in the form details first');
+      return;
+    }
+
+    // Create order summary content
+    const orderSummary = `
+ORDER SUMMARY
+=============
+
+Customer Information:
+- Name: ${formData.fullName}
+- WhatsApp: ${formData.whatsappNumber}
+
+Delivery Address:
+- Address Line 1: ${formData.addressLine1}
+- Address Line 2: ${formData.addressLine2}
+- District: ${formData.addressDistrict}
+- Province: ${formData.province}
+- District: ${formData.district}
+- Postal Code: ${formData.postalCode}
+
+Order Details:
+- Product: Lime Pickle
+- Size: ${formData.quantity}
+- Number of Bottles: ${formData.numberOfBottles}
+- Price per Bottle: LKR ${priceList[formData.quantity as keyof typeof priceList]}/=
+- Total Amount: LKR ${totalAmount.toLocaleString()}/=
+
+Order Date: ${new Date().toLocaleDateString()}
+Order Time: ${new Date().toLocaleTimeString()}
+
+Thank you for your order!
+We'll contact you via WhatsApp within 1 hour to confirm the details.
+    `;
+
+    // Create and download the file
+    const blob = new Blob([orderSummary], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `order-summary-${formData.fullName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+// Generate Professional PDF Order Report
+const generatePDFReport = (orderData: OrderForm, orderId: string) => {
+  const pdf = new jsPDF();
+  
+  // Colors (RGB values for jsPDF)
+  const primaryGreen = '#22c55e';
+  const darkGray = '#323232';
+  const lightGray = '#646464';
+  const accentGreen = '#16a34a';
+  
+  // Add decorative header background
+  pdf.setFillColor(248, 250, 252);
+  pdf.rect(0, 0, 210, 40, 'F');
+  
+  // Add subtle border
+  pdf.setDrawColor(226, 232, 240);
+  pdf.setLineWidth(0.5);
+  pdf.rect(10, 10, 190, 277);
+  
+  // Company Logo Area (decorative circle)
+  pdf.setFillColor(34, 197, 94);
+  pdf.circle(30, 25, 8, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('CP', 30, 28, { align: 'center' });
+  
+  // Company Header
+  pdf.setFontSize(28);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('CEYLONE PLATTER HUB', 105, 20, { align: 'center' });
+  
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('🌶️ Lime Pickle Order Report 🌶️', 105, 32, { align: 'center' });
+  
+  // Decorative line under header
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(1);
+  pdf.line(20, 42, 190, 42);
+  
+  // Order Information Box
+  pdf.setFillColor(248, 250, 252);
+  pdf.roundedRect(20, 50, 170, 25, 3, 3, 'F');
+  
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`📋 Order ID: ${orderId}`, 25, 60);
+  pdf.text(`📅 Date: ${new Date().toLocaleDateString()}`, 25, 68);
+  pdf.text(`🕐 Time: ${new Date().toLocaleTimeString()}`, 120, 60);
+  pdf.text(`📍 Status: Processing`, 120, 68);
+  
+  // Customer Information Section
+  let yPos = 90;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('👤 Customer Information', 28, yPos + 5);
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`Full Name: ${orderData.fullName}`, 25, yPos + 18);
+  pdf.text(`WhatsApp: ${orderData.whatsappNumber}`, 25, yPos + 28);
+  
+  // Delivery Address Section
+  yPos = 130;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('🏠 Delivery Address', 28, yPos + 5);
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`Address Line 1: ${orderData.addressLine1}`, 25, yPos + 18);
+  pdf.text(`Address Line 2: ${orderData.addressLine2}`, 25, yPos + 28);
+  pdf.text(`Address District: ${orderData.addressDistrict}`, 25, yPos + 38);
+  pdf.text(`Province: ${orderData.province}`, 25, yPos + 48);
+  pdf.text(`District: ${orderData.district}`, 120, yPos + 38);
+  pdf.text(`Postal Code: ${orderData.postalCode}`, 120, yPos + 48);
+  
+  // Order Details Section
+  yPos = 200;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('🛒 Order Details', 28, yPos + 5);
+  
+  // Order details box
+  pdf.setFillColor(252, 254, 252);
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(0.5);
+  pdf.roundedRect(25, yPos + 10, 160, 35, 2, 2, 'FD');
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  pdf.text(`Product: 🫙 Lime Pickle (Premium Quality)`, 30, yPos + 20);
+  pdf.text(`Size: ${orderData.quantity}`, 30, yPos + 30);
+  pdf.text(`Number of Bottles: ${orderData.numberOfBottles}`, 30, yPos + 40);
+  pdf.text(`Price per Bottle: LKR ${priceList[orderData.quantity as keyof typeof priceList]}/=`, 120, yPos + 30);
+  
+  // Total Amount (highlighted box)
+  yPos = 250;
+  pdf.setFillColor(34, 197, 94);
+  pdf.roundedRect(20, yPos, 170, 15, 3, 3, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(`💰 Total Amount: LKR ${totalAmount.toLocaleString()}/=`, 25, yPos + 10);
+  
+  // Order Process Section
+  yPos = 275;
+  pdf.setFillColor(22, 163, 74);
+  pdf.rect(20, yPos - 5, 4, 15, 'F');
+  
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('📋 Order Process', 28, yPos + 5);
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(50, 50, 50);
+  
+  const processSteps = [
+    '✅ Order Confirmation - Via WhatsApp within 1 hour',
+    '👨‍🍳 Fresh Preparation - Handcrafted with care',
+    '📦 Quality Packaging - Secure & hygienic',
+    '🚚 Home Delivery - Within 2-3 days',
+    '💵 Payment - Cash on delivery'
+  ];
+  
+  processSteps.forEach((step, index) => {
+    pdf.text(step, 25, yPos + 20 + (index * 10));
+  });
+  
+  // Footer with decorative elements
+  pdf.setFillColor(248, 250, 252);
+  pdf.rect(0, 340, 210, 40, 'F');
+  
+  pdf.setDrawColor(34, 197, 94);
+  pdf.setLineWidth(0.5);
+  pdf.line(20, 345, 190, 345);
+  
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(34, 197, 94);
+  pdf.text('🙏 Thank you for choosing Ceylone Platter Hub! 🙏', 105, 355, { align: 'center' });
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text('We\'ll contact you shortly via WhatsApp to confirm your order.', 105, 365, { align: 'center' });
+  pdf.text('📱 Follow us for updates and special offers!', 105, 375, { align: 'center' });
+  
+  // Save the PDF with enhanced filename
+  const fileName = `CeylonePlatterHub-Order-${orderData.fullName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+  pdf.save(fileName);
+};
   const [selectedProvince, setSelectedProvince] = useState('');
   const [districts, setDistricts] = useState<{ name: string; postalCode: string }[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -269,6 +526,12 @@ const Order: React.FC = () => {
         console.log('Order saved but email failed. Customer will be contacted via WhatsApp.');
       }
 
+      // Clear saved form data after successful submission
+      clearSavedFormData();
+
+      // Generate and download PDF report automatically
+      generatePDFReport(data, orderId);
+
       setOrderSuccess(true);
       
       // Redirect to thank you page after 3 seconds
@@ -304,6 +567,20 @@ const Order: React.FC = () => {
           <p className="text-gray-600 mb-8 text-lg">
             Thank you for your order. We'll contact you shortly via WhatsApp to confirm the details.
           </p>
+          
+          {/* PDF Download Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => generatePDFReport(watch(), 'ORDER-' + Date.now())}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center justify-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download Order Report (PDF)
+            </button>
+          </div>
+          
           <div className="flex items-center justify-center space-x-2">
             <div className="animate-spin w-6 h-6 border-3 border-lime-500 border-t-transparent rounded-full"></div>
             <span className="text-lime-600 font-medium">Redirecting...</span>
@@ -350,17 +627,25 @@ const Order: React.FC = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-yellow-800">Login Required</h3>
                         <p className="text-yellow-700">
-                          Please login or create an account to place your order. You can fill out the form below, but you'll need to authenticate before submitting.
+
+                          Please login or create an account to place your order. Your form details will be saved while you authenticate.
+
                         </p>
                         <div className="mt-3 flex space-x-3">
                           <Link
                             to="/login"
+
+                            state={{ from: '/order' }}
+
                             className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors duration-200"
                           >
                             Login
                           </Link>
                           <Link
                             to="/signup"
+
+                            state={{ from: '/order' }}
+
                             className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors duration-200"
                           >
                             Sign Up
@@ -663,26 +948,36 @@ const Order: React.FC = () => {
 
                   {/* Submit Button */}
                   <div className="pt-6">
-                    <button
-                      type="button"
-                      onClick={handleOrderButtonClick}
-                      disabled={isSubmitting || !totalAmount}
-                      className="w-full bg-gradient-to-r from-lime-500 to-orange-500 text-white py-5 px-8 rounded-2xl font-bold text-xl hover:from-lime-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center"
-                    >
-                      {isSubmitting ? (
-                        <div className="animate-spin w-6 h-6 border-3 border-white border-t-transparent rounded-full mr-3"></div>
-                      ) : (
+
+                    {isAuthenticated ? (
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !totalAmount}
+                        className="w-full bg-gradient-to-r from-lime-500 to-orange-500 text-white py-5 px-8 rounded-2xl font-bold text-xl hover:from-lime-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center"
+                      >
+                        {isSubmitting ? (
+                          <div className="animate-spin w-6 h-6 border-3 border-white border-t-transparent rounded-full mr-3"></div>
+                        ) : (
+                          <ShoppingCart className="w-6 h-6 mr-3" />
+                        )}
+                        {isSubmitting ? 'Processing Your Order...' : 'Place Order Now'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleOrderButtonClick}
+                        disabled={!totalAmount}
+                        className="w-full bg-gradient-to-r from-lime-500 to-orange-500 text-white py-5 px-8 rounded-2xl font-bold text-xl hover:from-lime-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center"
+                      >
                         <ShoppingCart className="w-6 h-6 mr-3" />
-                      )}
-                      {isSubmitting 
-                        ? 'Processing Your Order...' 
-                        : 'Place Order Now'
-                      }
-                    </button>
+                        Place Order Now
+                      </button>
+                    )}
                     
                     {!isAuthenticated && (
                       <p className="mt-3 text-center text-sm text-gray-600">
-                        You can fill out the form above, but you'll need to login to submit your order.
+                        Your form details will be automatically saved. After logging in, you can return here and submit your order without re-entering information.
+
                       </p>
                     )}
                   </div>
@@ -732,6 +1027,42 @@ const Order: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Address Information */}
+                {watch('fullName') && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <h4 className="font-semibold text-gray-800 mb-3">Delivery Address:</h4>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-gray-700">
+                        <span className="font-medium">Name:</span> {watch('fullName')}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-medium">Address:</span> {watch('addressLine1')}, {watch('addressLine2')}, {watch('addressDistrict')}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-medium">Province:</span> {watch('province')}, {watch('district')} {watch('postalCode')}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-medium">WhatsApp:</span> {watch('whatsappNumber')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Download Order Summary Button */}
+                {totalAmount > 0 && (
+                  <div className="pt-4">
+                    <button
+                      onClick={() => downloadOrderSummary()}
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center justify-center"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Download Order Summary
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -840,72 +1171,71 @@ const Order: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Test Email Button - Remove this after testing */}
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-5">
-                <h3 className="text-xl font-bold text-white flex items-center">
-                  <Mail className="w-6 h-6 mr-3" />
-                  Debug EmailJS
+      {/* Login Required Popup Modal */}
+      {showLoginPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <AlertCircle className="w-6 h-6 text-yellow-600 mr-3" />
+                Login Required
+              </h2>
+              <button
+                onClick={() => setShowLoginPopup(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-10 h-10 text-yellow-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Please Login to Continue
                 </h3>
-              </div>
-              
-              <div className="p-6 space-y-3">
-                <button
-                  onClick={async () => {
-                    console.log('Testing EmailJS with default template...');
-                    const result = await testDefaultTemplate();
-                    if (result.success) {
-                      alert('✅ Default template test email sent successfully! Check your email.');
-                    } else {
-                      alert('❌ Default template test failed. Check console for details.');
-                    }
-                  }}
-                  className="w-full bg-green-500 text-white py-3 px-4 rounded-xl hover:bg-green-600 transition-colors duration-200 flex items-center justify-center font-medium"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Test Different Variables
-                </button>
-                
-                <button
-                  onClick={async () => {
-                    console.log('Testing EmailJS with minimal parameters...');
-                    const result = await testMinimalEmail();
-                    if (result.success) {
-                      alert('✅ Minimal test email sent successfully! Check your email.');
-                    } else {
-                      alert('❌ Minimal test failed. Check console for details.');
-                    }
-                  }}
-                  className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center font-medium"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Test Minimal Email
-                </button>
-                
-                <button
-                  onClick={async () => {
-                    console.log('Testing EmailJS with full parameters...');
-                    const result = await testEmailJS();
-                    if (result.success) {
-                      alert('✅ Full test email sent successfully! Check your email.');
-                    } else {
-                      alert('❌ Full test failed. Check console for details.');
-                    }
-                  }}
-                  className="w-full bg-yellow-500 text-white py-3 px-4 rounded-xl hover:bg-yellow-600 transition-colors duration-200 flex items-center justify-center font-medium"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Test Full Email
-                </button>
-                
-                <p className="text-xs text-yellow-700 mt-3 text-center">
-                  Test buttons for debugging. Remove after EmailJS is working.
+                <p className="text-gray-600 mb-6">
+                  You need to be logged in to place your order. Don't worry - your form details will be saved and restored when you return!
                 </p>
+              </div>
+
+              <div className="space-y-3">
+                <Link
+                  to="/login"
+                  state={{ from: '/order' }}
+                  onClick={() => setShowLoginPopup(false)}
+                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-lime-500 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200"
+                >
+                  Login to Existing Account
+                </Link>
+                <Link
+                  to="/signup"
+                  state={{ from: '/order' }}
+                  onClick={() => setShowLoginPopup(false)}
+                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors duration-200"
+                >
+                  Create New Account
+                </Link>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={() => setShowLoginPopup(false)}
+                  className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+                >
+                  Continue Browsing
+                </button>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Login Required Popup Modal */}
@@ -966,6 +1296,7 @@ const Order: React.FC = () => {
             </div>
           </div>
         </div>
+
       )}
     </div>
   );
