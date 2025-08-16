@@ -1,9 +1,31 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star, Truck, Shield } from 'lucide-react';
+import { ShoppingCart, Star, Truck, Shield, LogIn, UserPlus } from 'lucide-react';
 import ImageCarousel from '../components/ImageCarousel';
+import AuthModal from '../components/AuthModal';
+import { supabase } from '../lib/supabase';
 
 const Home: React.FC = () => {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const session = supabase.auth.getSession ? undefined : null;
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data?.user || null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  const fullName = user?.user_metadata?.full_name || user?.email || '';
+
   return (
     <div className="pt-16">
       {/* Hero Section */}
@@ -20,14 +42,39 @@ const Home: React.FC = () => {
                 traditional recipes and the finest ingredients. Made with love in small 
                 batches to preserve that authentic home-cooked flavor.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/order"
-                  className="inline-flex items-center justify-center px-8 py-4 bg-white text-lime-600 font-semibold rounded-lg hover:bg-lime-50 transition-colors duration-200 shadow-lg"
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Place Order Now
-                </Link>
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                {user ? (
+                  <>
+                    <Link
+                      to="/order"
+                      className="inline-flex items-center justify-center px-8 py-4 bg-white text-lime-600 font-semibold rounded-lg hover:bg-lime-50 transition-colors duration-200 shadow-lg"
+                    >
+                      <ShoppingCart className="w-5 h-5 mr-2" />
+                      Place Order Now
+                    </Link>
+                    <span className="ml-4 text-white font-bold flex items-center">
+                      <UserPlus className="w-5 h-5 mr-1" />
+                      {fullName}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="inline-flex items-center justify-center px-8 py-4 bg-white text-lime-600 font-semibold rounded-lg hover:bg-lime-50 transition-colors duration-200 shadow-lg"
+                      onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}
+                    >
+                      <LogIn className="w-5 h-5 mr-2" />
+                      Login
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-lime-600 transition-colors duration-200"
+                      onClick={() => { setAuthMode('signup'); setAuthModalOpen(true); }}
+                    >
+                      <UserPlus className="w-5 h-5 mr-2" />
+                      Sign Up
+                    </button>
+                  </>
+                )}
                 <Link
                   to="/products"
                   className="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-lime-600 transition-colors duration-200"
@@ -111,15 +158,28 @@ const Home: React.FC = () => {
             Order your authentic lime pickle today and experience the perfect blend 
             of tangy limes and aromatic spices.
           </p>
-          <Link
-            to="/order"
-            className="inline-flex items-center px-8 py-4 bg-white text-orange-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg text-lg"
-          >
-            <ShoppingCart className="w-6 h-6 mr-2" />
-            Order Now
-          </Link>
+          {user ? (
+            <Link
+              to="/order"
+              className="inline-flex items-center px-8 py-4 bg-white text-orange-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg text-lg"
+            >
+              <ShoppingCart className="w-6 h-6 mr-2" />
+              Order Now
+            </Link>
+          ) : (
+            <button
+              className="inline-flex items-center px-8 py-4 bg-white text-orange-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg text-lg"
+              onClick={() => { setAuthMode('login'); setAuthModalOpen(true); }}
+            >
+              <ShoppingCart className="w-6 h-6 mr-2" />
+              Login to Order
+            </button>
+          )}
         </div>
       </section>
+
+      {/* Auth Modal */}
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} mode={authMode} setMode={setAuthMode} />
     </div>
   );
 };

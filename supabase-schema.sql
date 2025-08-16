@@ -1,3 +1,12 @@
+-- USERS TABLE (simple, no auth)
+create table if not exists users (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null,
+  whatsapp_number text not null,
+  email text not null unique,
+  password text not null,
+  created_at timestamp with time zone default now()
+);
 -- Create orders table
 CREATE TABLE IF NOT EXISTS orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

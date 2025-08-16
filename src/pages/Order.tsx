@@ -98,7 +98,17 @@ const slProvinces = [
 const Order: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+  // Simple local user session check
+  const [user, setUser] = useState<any>(null);
+  useEffect(() => {
+    const localUser = localStorage.getItem('user');
+    if (!localUser) {
+      navigate('/');
+    } else {
+      setUser(JSON.parse(localUser));
+    }
+  }, [navigate]);
+  if (!user) return null;
 
   const {
     register,
