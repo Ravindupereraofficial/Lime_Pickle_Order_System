@@ -488,7 +488,7 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
         
         // Use the EmailJS configuration from the lib
         const emailParams = {
-          email: "ckaushi723@gmail.com", // Required for EmailJS 'To Email' field
+          email: "ckaushi895@gmail.com", // Required for EmailJS 'To Email' field
           orderId: orderId,
           order_date: new Date().toLocaleDateString(),
           full_name: data.fullName,
@@ -557,6 +557,7 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
   };
 
   if (orderSuccess) {
+
     return (
       <div className="pt-16 min-h-screen bg-gradient-to-br from-lime-50 to-orange-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-2xl text-center transform animate-fade-in">
@@ -567,7 +568,6 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
           <p className="text-gray-600 mb-8 text-lg">
             Thank you for your order. We'll contact you shortly via WhatsApp to confirm the details.
           </p>
-          
           {/* PDF Download Button */}
           <div className="mb-6">
             <button
@@ -580,9 +580,7 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
               Download Order Report (PDF)
             </button>
           </div>
-          
           <div className="flex items-center justify-center space-x-2">
-            <div className="animate-spin w-6 h-6 border-3 border-lime-500 border-t-transparent rounded-full"></div>
             <span className="text-lime-600 font-medium">Redirecting...</span>
           </div>
         </div>
@@ -1174,7 +1172,6 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
           </div>
         </div>
       </div>
-
       {/* Login Required Popup Modal */}
       {showLoginPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1235,68 +1232,17 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
             </div>
           </div>
         </div>
+      )}
 
-      </div>
-
-      {/* Login Required Popup Modal */}
-      {showLoginPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                <AlertCircle className="w-6 h-6 text-yellow-600 mr-3" />
-                Login Required
-              </h2>
-              <button
-                onClick={() => setShowLoginPopup(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-10 h-10 text-yellow-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Please Login to Continue
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  You need to be logged in to place your order. Please login or create an account to proceed.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Link
-                  to="/login"
-                  onClick={() => setShowLoginPopup(false)}
-                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-lime-500 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200"
-                >
-                  Login to Existing Account
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={() => setShowLoginPopup(false)}
-                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors duration-200"
-                >
-                  Create New Account
-                </Link>
-              </div>
-
-              <div className="text-center">
-                <button
-                  onClick={() => setShowLoginPopup(false)}
-                  className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-                >
-                  Continue Browsing
-                </button>
-              </div>
-            </div>
+      {/* Submitting Loader Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-[1px] flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
+            <div className="mx-auto mb-4 w-14 h-14 border-4 border-lime-500 border-t-transparent rounded-full animate-spin" />
+            <h3 className="text-xl font-semibold text-gray-800 mb-1">Processing your order...</h3>
+            <p className="text-gray-600">Please wait while we confirm your order details.</p>
           </div>
         </div>
-
       )}
     </div>
   );
