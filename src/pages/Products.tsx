@@ -128,9 +128,13 @@ const Products: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-white p-8 rounded-xl shadow-lg">
               <img
-                src="https://images.pexels.com/photos/4099235/pexels-photo-4099235.jpeg?auto=compress&cs=tinysrgb&w=600"
+                src="https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_1200,dpr_auto/v1755503502/535846326_736749802572880_4155635982096008702_n_nhvawk.jpg"
+                srcSet="https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_600,dpr_auto/v1755503502/535846326_736749802572880_4155635982096008702_n_nhvawk.jpg 600w, https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_900,dpr_auto/v1755503502/535846326_736749802572880_4155635982096008702_n_nhvawk.jpg 900w, https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_1200,dpr_auto/v1755503502/535846326_736749802572880_4155635982096008702_n_nhvawk.jpg 1200w"
+                sizes="(min-width: 768px) 50vw, 100vw"
+                loading="lazy"
+                decoding="async"
                 alt="Fresh ingredients"
-                className="w-full h-48 object-cover rounded-lg mb-6"
+                className="w-full h-64 md:h-80 object-cover rounded-lg mb-6"
               />
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Premium Ingredients</h3>
               <p className="text-gray-600">
@@ -141,9 +145,13 @@ const Products: React.FC = () => {
 
             <div className="bg-white p-8 rounded-xl shadow-lg">
               <img
-                src="https://images.pexels.com/photos/4198170/pexels-photo-4198170.jpeg?auto=compress&cs=tinysrgb&w=600"
+                src="https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_1200,dpr_auto/v1755503504/467731356_540349522212910_7268412714141758126_n_ajjlnf.jpg"
+                srcSet="https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_600,dpr_auto/v1755503504/467731356_540349522212910_7268412714141758126_n_ajjlnf.jpg 600w, https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_900,dpr_auto/v1755503504/467731356_540349522212910_7268412714141758126_n_ajjlnf.jpg 900w, https://res.cloudinary.com/dtol8lk5b/image/upload/f_auto,q_auto,w_1200,dpr_auto/v1755503504/467731356_540349522212910_7268412714141758126_n_ajjlnf.jpg 1200w"
+                sizes="(min-width: 768px) 50vw, 100vw"
+                loading="lazy"
+                decoding="async"
                 alt="Traditional preparation"
-                className="w-full h-48 object-cover rounded-lg mb-6"
+                className="w-full h-64 md:h-80 object-cover rounded-lg mb-6"
               />
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Traditional Method</h3>
               <p className="text-gray-600">

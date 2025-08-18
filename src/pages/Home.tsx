@@ -104,6 +104,62 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Latest Updates - Facebook Videos */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-800 mb-4">Latest Updates</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Watch our recent updates and stories from Facebook
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="rounded-xl overflow-hidden shadow-lg bg-black">
+              <iframe
+                title="Facebook video 1"
+                src="https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Freel%2F19HJSVmsBV%2F&show_text=false&width=500&height=420"
+                className="w-full h-64 md:h-72"
+                style={{ border: 'none', overflow: 'hidden' }}
+                scrolling="no"
+                frameBorder={0}
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                allowFullScreen={true}
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
+
+            <div className="rounded-xl overflow-hidden shadow-lg bg-black">
+              <iframe
+                title="Facebook video 2"
+                src="https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2F100087136002444%2Fvideos%2F776003948238953%2F&show_text=false&width=500&height=420"
+                className="w-full h-64 md:h-72"
+                style={{ border: 'none', overflow: 'hidden' }}
+                scrolling="no"
+                frameBorder={0}
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                allowFullScreen={true}
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
+
+            <div className="rounded-xl overflow-hidden shadow-lg bg-black">
+              <iframe
+                title="Facebook video 3"
+                src="https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Freel%2F1XTRki6fvz%2F&show_text=false&width=500&height=420"
+                className="w-full h-64 md:h-72"
+                style={{ border: 'none', overflow: 'hidden' }}
+                scrolling="no"
+                frameBorder={0}
+                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                allowFullScreen={true}
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-orange-500 to-lime-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
