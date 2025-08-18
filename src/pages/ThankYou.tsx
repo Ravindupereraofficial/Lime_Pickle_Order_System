@@ -35,7 +35,17 @@ const ThankYou: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-600">Delivery Address:</span>
-                    <span className="ml-2 font-medium">{orderData.deliveryAddress}</span>
+                    <span className="ml-2 font-medium">
+                      {[
+                        orderData.deliveryAddressLine1,
+                        orderData.deliveryAddressLine2,
+                        orderData.deliveryAddressDistrict,
+                        orderData.province,
+                        `${orderData.district} ${orderData.postalCode || ''}`.trim()
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
                   </div>
                 </div>
               </div>

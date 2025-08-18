@@ -40,7 +40,7 @@ const About: React.FC = () => {
             </div>
             <div className="relative">
               <img
-                src="https://images.pexels.com/photos/4198170/pexels-photo-4198170.jpeg?auto=compress&cs=tinysrgb&w=800"
+                src="https://res.cloudinary.com/dtol8lk5b/image/upload/v1755235591/516871801_704957635752097_7789693277955808336_n_ikmnfn.jpg"
                 alt="Traditional lime pickle preparation"
                 className="w-full h-96 object-cover rounded-2xl shadow-lg"
               />
@@ -110,7 +110,7 @@ const About: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="relative order-2 lg:order-1">
               <img
-                src="https://images.pexels.com/photos/4099235/pexels-photo-4099235.jpeg?auto=compress&cs=tinysrgb&w=800"
+                src="https://res.cloudinary.com/dtol8lk5b/image/upload/v1755235591/516542850_704957345752126_4691991998449596816_n_pyifx5.jpg"
                 alt="Fresh lime pickle ingredients"
                 className="w-full h-96 object-cover rounded-2xl shadow-lg"
               />
