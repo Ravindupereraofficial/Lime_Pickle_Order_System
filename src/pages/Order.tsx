@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 
-import { ShoppingCart, Calculator, CheckCircle, User, MapPin, Phone, Package, CreditCard, Truck, Shield, Star, AlertCircle, X } from 'lucide-react';
+import { ShoppingCart, Calculator, CheckCircle, User, Phone, Package, CreditCard, Truck, Shield, Star, AlertCircle, X } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -136,6 +136,9 @@ const Order: React.FC = () => {
             setValue(key as keyof OrderForm, parsedData[key]);
           }
         });
+        if (parsedData.province) {
+          setSelectedProvince(parsedData.province);
+        }
       } catch (error) {
         console.error('Error parsing saved form data:', error);
       }
@@ -147,7 +150,7 @@ const Order: React.FC = () => {
     localStorage.removeItem('orderFormData');
   };
 
-  // Download order summary as PDF
+  // Download order summary as text
   const downloadOrderSummary = () => {
     const formData = watch();
     if (!formData.fullName || !totalAmount) {
@@ -156,6 +159,9 @@ const Order: React.FC = () => {
     }
 
     // Create order summary content
+    const unitPrice = formData.quantity ? priceList[formData.quantity as keyof typeof priceList] : 0;
+    const computedSubtotal = unitPrice * (formData.numberOfBottles || 0);
+    const computedDelivery = computedSubtotal > 0 ? (formData.province === 'Western' ? 400 : 450) : 0;
     const orderSummary = `
 ORDER SUMMARY
 =============
@@ -176,8 +182,10 @@ Order Details:
 - Product: Lime Pickle
 - Size: ${formData.quantity}
 - Number of Bottles: ${formData.numberOfBottles}
-- Price per Bottle: LKR ${priceList[formData.quantity as keyof typeof priceList]}/=
-- Total Amount: LKR ${totalAmount.toLocaleString()}/=
+- Price per Bottle: LKR ${unitPrice}/=
+- Subtotal: LKR ${computedSubtotal.toLocaleString()}/=
+- Delivery Charge (${formData.province === 'Western' ? 'Western Province' : 'Other Provinces'}): LKR ${computedDelivery.toLocaleString()}/=
+- Total Amount: LKR ${(computedSubtotal + computedDelivery).toLocaleString()}/=
 
 Order Date: ${new Date().toLocaleDateString()}
 Order Time: ${new Date().toLocaleTimeString()}
@@ -203,10 +211,7 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
   const pdf = new jsPDF();
   
   // Colors (RGB values for jsPDF)
-  const primaryGreen = '#22c55e';
-  const darkGray = '#323232';
-  const lightGray = '#646464';
-  const accentGreen = '#16a34a';
+  // Theme colors (kept for reference if future styling is needed)
   
   // Add decorative header background
   pdf.setFillColor(248, 250, 252);
@@ -303,18 +308,22 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
   pdf.setFillColor(252, 254, 252);
   pdf.setDrawColor(34, 197, 94);
   pdf.setLineWidth(0.5);
-  pdf.roundedRect(25, yPos + 10, 160, 35, 2, 2, 'FD');
+  pdf.roundedRect(25, yPos + 10, 160, 45, 2, 2, 'FD');
   
   pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(50, 50, 50);
+  const unitPricePDF = priceList[orderData.quantity as keyof typeof priceList];
+  const subtotalPDF = unitPricePDF * orderData.numberOfBottles;
+  const deliveryChargePDF = subtotalPDF > 0 ? (orderData.province === 'Western' ? 400 : 450) : 0;
   pdf.text(`Product: 🫙 Lime Pickle (Premium Quality)`, 30, yPos + 20);
   pdf.text(`Size: ${orderData.quantity}`, 30, yPos + 30);
   pdf.text(`Number of Bottles: ${orderData.numberOfBottles}`, 30, yPos + 40);
-  pdf.text(`Price per Bottle: LKR ${priceList[orderData.quantity as keyof typeof priceList]}/=`, 120, yPos + 30);
+  pdf.text(`Price per Bottle: LKR ${unitPricePDF}/=`, 120, yPos + 30);
+  pdf.text(`Delivery: LKR ${deliveryChargePDF}/=`, 120, yPos + 40);
   
   // Total Amount (highlighted box)
-  yPos = 250;
+  yPos = 260;
   pdf.setFillColor(34, 197, 94);
   pdf.roundedRect(20, yPos, 170, 15, 3, 3, 'F');
   
@@ -324,7 +333,7 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
   pdf.text(`💰 Total Amount: LKR ${totalAmount.toLocaleString()}/=`, 25, yPos + 10);
   
   // Order Process Section
-  yPos = 275;
+  yPos = 285;
   pdf.setFillColor(22, 163, 74);
   pdf.rect(20, yPos - 5, 4, 15, 'F');
   
@@ -403,6 +412,8 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
     }
   }, [selectedDistrict, districts, setValue]);
 
+  const [subtotal, setSubtotal] = useState(0);
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
@@ -422,15 +433,17 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
     }
   }, [location.state, setValue]);
 
-  // Calculate total amount when quantity or bottles change
+  // Calculate subtotal, delivery charge and total when quantity/bottles/province change
   useEffect(() => {
-    if (selectedQuantity && numberOfBottles > 0) {
-      const price = priceList[selectedQuantity as keyof typeof priceList];
-      setTotalAmount(price * numberOfBottles);
-    } else {
-      setTotalAmount(0);
-    }
-  }, [selectedQuantity, numberOfBottles]);
+    const unitPrice = selectedQuantity ? priceList[selectedQuantity as keyof typeof priceList] : 0;
+    const computedSubtotal = unitPrice * (numberOfBottles || 0);
+    setSubtotal(computedSubtotal);
+
+    const computedDelivery = computedSubtotal > 0 ? (selectedProvince === 'Western' ? 400 : 450) : 0;
+    setDeliveryCharge(computedDelivery);
+
+    setTotalAmount(computedSubtotal + computedDelivery);
+  }, [selectedQuantity, numberOfBottles, selectedProvince]);
 
   const handleOrderButtonClick = () => {
     if (!isAuthenticated) {
@@ -1018,11 +1031,19 @@ const generatePDFReport = (orderData: OrderForm, orderId: string) => {
                 </div>
 
                 <div className="bg-gradient-to-r from-lime-50 to-orange-50 p-6 rounded-2xl border-2 border-lime-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-gray-800">Total Amount:</span>
-                    <span className="text-3xl font-bold text-lime-600">
-                      LKR {totalAmount.toLocaleString()}/=
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-gray-700">
+                      <span>Subtotal</span>
+                      <span>LKR {subtotal.toLocaleString()}/=</span>
+                    </div>
+                    <div className="flex justify-between text-gray-700">
+                      <span>Delivery ({selectedProvince === 'Western' ? 'Western Province' : 'Other Provinces'})</span>
+                      <span>LKR {deliveryCharge.toLocaleString()}/=</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-lime-200">
+                      <span className="text-xl font-bold text-gray-800">Total Amount</span>
+                      <span className="text-3xl font-bold text-lime-600">LKR {totalAmount.toLocaleString()}/=</span>
+                    </div>
                   </div>
                 </div>
 
